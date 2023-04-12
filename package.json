@@ -1,0 +1,11 @@
+{
+  "name": "instagram-downloader-backend",
+  "version": "1.0.0",
+  "description": "Backend for downloading instagram pictures",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Nothing to do\""
+  },
+  "author": "Salman Arefin",
+  "license": "ISC"
+}
