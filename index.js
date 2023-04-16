@@ -1,6 +1,7 @@
 const { default: axios } = require('axios');
 const express = require('express');
 const cheerio = require('cheerio');
+const fs = require('fs');
 
 const app = express();
 const port = 9001;
@@ -16,18 +17,33 @@ const getImage = async(instagramPostLink) => {
   return imageLink;
 };
 
-// const downloadImage = async(imageLink, fileName) => {
-
-// };
+const downloadImage = async(imageLink, fileName) => {
+  const imageBuffer = await axios.get(imageLink, {
+    responseType: 'arraybuffer'
+  });
+  fs.writeFileSync(fileName, Buffer.from(imageBuffer.data), 'binary');
+};
 
 app.get('/download/:postCode', async(req, res) => {
   const postCode = req.params.postCode.replace(':', '');
-  let instagramPostLink = `${instagramURL}${postCode}`;
-  //let instagramPostLink = 'https://instagram.com/p/Cq7wMaNo26q';
+  let instagramPostLink = `${instagramURL}${postCode}`; //'https://instagram.com/p/Cq7wMaNo26q'
   console.log(instagramPostLink);
   let imageLink = await getImage(instagramPostLink);
-  console.log("Found: ", imageLink);
-
+  let imageName = 'downloadedImage.jpg';
+  if(imageLink){
+    console.log("Found image link, trying to download.");
+    await downloadImage(imageLink, imageName);
+    res.download(imageName, (err) => {
+      if(err){
+        console.error("ERROR ! Coudn't download image");
+      }
+      fs.unlinkSync(imageName);
+    });
+  }
+  else{
+    console.error("No image link found, ");
+  }
+  
 });
 
 app.listen(port, () => {
