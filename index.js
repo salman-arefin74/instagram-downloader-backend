@@ -1,51 +1,54 @@
-const { default: axios } = require('axios');
 const express = require('express');
+const bodyParser = require('body-parser');
+const axios = require('axios');
 const cheerio = require('cheerio');
-const fs = require('fs');
 
 const app = express();
 const port = 9001;
 const instagramURL = 'https://instagram.com/p/';
 
-const getImage = async(instagramPostLink) => {
-  let response = await axios.get(instagramPostLink);
-  if (!response.data) {
-    throw new Error('No data found in the response');
-  }
-  const $ = cheerio.load(response.data);
-  const imageLink = $('meta[property="og:image"]').attr('content');
-  return imageLink;
-};
+app.use(bodyParser.urlencoded({extended: true}));
 
-const downloadImage = async(imageLink, fileName) => {
-  const imageBuffer = await axios.get(imageLink, {
-    responseType: 'arraybuffer'
-  });
-  fs.writeFileSync(fileName, Buffer.from(imageBuffer.data), 'binary');
-};
+app.listen(port, () => {
+  console.log('listening on port', port);
+});
+
+async function fetchInstagramImage(url) {
+  try {
+    const response = await axios.get(url);
+    const html = response.data;
+    const $ = cheerio.load(html);
+
+    const metadata = {};
+    metadata.url = $('meta[property="og:image"]').attr('content');
+    metadata.title = $('meta[property="og:title"]').attr('content');
+    metadata.description = $('meta[property="og:description"]').attr('content');
+    metadata.image = $('meta[property="og:image"]').attr('content');
+    metadata.video = $('meta[property="og:video"]').attr('content');
+
+    if (metadata.video) {
+      metadata.type = 'video';
+    } else if (metadata.image) {
+      metadata.type = 'image';
+    } else {
+      metadata.type = 'unknown';
+    }
+
+    return metadata;
+  } catch (error) {
+    console.error('Error fetching Instagram post:', error);
+    throw new Error('Failed to fetch Instagram post');
+  }
+}
 
 app.get('/download/:postCode', async(req, res) => {
   const postCode = req.params.postCode.replace(':', '');
   let instagramPostLink = `${instagramURL}${postCode}`; //'https://instagram.com/p/Cq7wMaNo26q'
   console.log(instagramPostLink);
-  let imageLink = await getImage(instagramPostLink);
-  let imageName = 'downloadedImage.jpg';
-  if(imageLink){
-    console.log("Found image link, trying to download.");
-    await downloadImage(imageLink, imageName);
-    res.download(imageName, (err) => {
-      if(err){
-        console.error("ERROR ! Coudn't download image");
-      }
-      fs.unlinkSync(imageName);
-    });
-  }
-  else{
-    console.error("No image link found, ");
-  }
-  
+  const imageInfo = await fetchInstagramImage(instagramPostLink);
+  console.log(imageInfo);
 });
 
-app.listen(port, () => {
-  console.log('listening on port ' + port);
-});
+app.get('/', (req, res) => {
+  res.send('Hello World');
+})
