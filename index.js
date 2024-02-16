@@ -39,36 +39,15 @@ async function fetchInstagramImage(url) {
 
     return Promise.resolve(metadata);
   } catch (error) {
-    console.error('Error fetching Instagram post:', error);
+    console.error('Error fetching Instagram post: ', error);
     return Promise.reject(new Error('Failed to fetch Instagram post'));
   }
 }
 
-// async function downloadImage(imageUrl, destinationPath) {
-//   try {
-//     const response = await axios({
-//       method: 'GET',
-//       url: imageUrl,
-//       responseType: 'stream'
-//     });
-
-//     const writer = fs.createWriteStream(destinationPath);
-//     response.data.pipe(writer);
-
-//     return new Promise((resolve, reject) => {
-//       writer.on('finish', resolve);
-//       writer.on('error', reject);
-//     });
-//   } catch (error) {
-//     console.error('Error downloading image:', error);
-//     throw new Error('Failed to download image');
-//   }
-// }
-
 function downloadImage(res, url, extension) {
   request(url, {encoding: null}, (error, response, body) => {
     if (error) {
-      console.error('Error downloading image:', error);
+      console.error('Error downloading image: ', error);
       throw new Error('Failed to download image');
     } else {
       const fileName = Date.now() + extension;
@@ -82,20 +61,13 @@ function downloadImage(res, url, extension) {
 app.get('/download/:postCode', async(req, res) => {
   const postCode = req.params.postCode.replace(':', '');
   let instagramPostLink = `${instagramURL}${postCode}`; //'https://instagram.com/p/Cq7wMaNo26q'
-  console.log(instagramPostLink);
-  // const imageInfo = await fetchInstagramImage(instagramPostLink);
-  // console.log(imageInfo);
-
-  // downloadImage(imageInfo.url, "./image.jpg")
-  // .then(() => console.log('Image downloaded successfully'))
-  // .catch(error => console.error(error));
-
+  console.log("Instagram post URL: ", instagramPostLink);
   fetchInstagramImage(instagramPostLink).then((response) => {
-    console.log(response);
+    console.log("Metadata information of the requested post: ", response);
     downloadImage(res, response.url, '.jpg');
   })
 });
 
 app.get('/', (req, res) => {
-  res.send('Hello World');
+  res.send('Instagram Downloader');
 })
